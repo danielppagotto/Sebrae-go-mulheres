@@ -8,19 +8,15 @@ output: html_document
 ```{r preparacao, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse); library(vroom); library(genderBR); library(readxl); library(lubridate)
 
-tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/cnae.csv?token=AB6EEA3Z3PNIJEO4AMEL6PTBCEUNO",
+tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/cnae.csv?token=AB6EEA2QR7M5547S44OSIC3BCHRW2",
                        ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
-municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv?token=AB6EEA4ZWPV7Y6F7C3YONULBCGFQY",
+municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv?token=AB6EEAZ4IYU44UIEVNZ5XQDBCHR3O",
                          ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
-
-natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv?token=AB6EEA7VJBB4LD7CYQRQS7LBCEVMI",
+natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv?token=AB6EEA5OLW5IREMLWTSMQ4TBCHR76",
                                 ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
 
-
-socios_tipos <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/quadro_socios.csv?token=AB6EEA6XM7DHRX6WASWSKDLBCEWDC",
-                     ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
 # Subindo bases depois de tratatadas -------------------------------------------
 
@@ -33,18 +29,59 @@ ativas <- ativas_base %>%
          qualifica_responsavel = X4, capital_social = X5,
          porte_empresa = X6, ente_federativo = X7) %>% 
          left_join(natureza_juridica, by = c("natureza_juridica" = "cod_subclass_natureza_juridica")) %>% 
-         filter(cod_natureza_juridica > 1 & cod_natureza_juridica < 5)
+         filter(cod_natureza_juridica > 1 & cod_natureza_juridica < 5) %>% 
+         rename(id = `...1`)
 ```
 
 ## Tratamentos iniciais
 
 Os dados receberam um tratamento inicial, que consistiu nos seguintes procedimentos: 1) manutenção de empresas com status ativo; 2) retirada de empresas com natureza jurídica pública ou associada a organismos internacionais. 
 
-As informações a seguir representa a estrutura da base estabelecimentos, que é a parte central dos dados da Receita Federal Brasileira (RFB) 
+As informações a seguir representa a estrutura da base estabelecimentos, que é a parte central dos dados da Receita Federal Brasileira (RFB). Ao todo, registramos 684.096 de empresas ativas no estado de Goiás. 
 
 ```{r base}
 
 glimpse(ativas)
 
 ```
+
+## 1) Análise Microempresa 
+
+Optamos por filtrar as observações correspondentes a microempresas primeiro, pois são mais volumosas e mais fáceis de tratar. Ao todo, das 684.096 empresas, 426.014 foram microempresas (62,7%)
+
+```{r}
+microempresas <- ativas %>% 
+        filter(natureza_juridica == "2135") 
+
+dim(microempresas)
+```
+
+Em sequência, aplicou-se a função get_gender para identificar nomes dos empresários. O algoritmo conseguiu prever 90% dos nomes. Com isso, o número de observações foi de 387.345.
+
+```{r}
+
+me <- microempresas %>% 
+  mutate(genero = get_gender(razao_social), .after = razao_social) %>% 
+  filter(genero != "NA") %>% 
+  left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
+  mutate(data = parse_date_time(data_inicio_atividade, orders = "ymd"),
+         ano = year(data)) 
+
+dim(me)
+
+```
+
+Por fim, foi feito um agrupamento por microempresas por município 
+
+```{r}
+municipios_me <- me %>% 
+  rename(nome_municipio = Municipio) %>% 
+  group_by(municipio, nome_municipio , genero) %>% 
+  count() %>% 
+  mutate(natureza = "me")
+
+DT::datatable(municipios_me)
+```
+
+
 
