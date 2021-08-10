@@ -85,5 +85,20 @@ municipios_me <- me %>%
 DT::datatable(municipios_me)
 ```
 
-## 2) Análise 
+## 2) Análise das demais naturezas jurídicas 
+
+Ao todo o estado possui 258.082 empresas das demais naturezas jurídicas. 
+
+```{r}
+nao_me1 <- ativas %>% 
+  filter(natureza_juridica != "2135") 
+
+dim(nao_me1)
+```
+
+
+
+
+
+
 
