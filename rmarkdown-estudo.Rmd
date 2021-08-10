@@ -1,0 +1,50 @@
+---
+title: "Procedimentos metodológicos - Sebrae Goiás"
+author: "Daniel Pagotto"
+date: "09/08/2021"
+output: html_document
+---
+
+```{r preparacao, message=FALSE, warning=FALSE, include=FALSE}
+library(tidyverse); library(vroom); library(genderBR); library(readxl); library(lubridate)
+
+tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/cnae.csv?token=AB6EEA3Z3PNIJEO4AMEL6PTBCEUNO",
+                       ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
+
+municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv?token=AB6EEA4ZWPV7Y6F7C3YONULBCGFQY",
+                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
+
+
+natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv?token=AB6EEA7VJBB4LD7CYQRQS7LBCEVMI",
+                                ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
+
+
+socios_tipos <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/quadro_socios.csv?token=AB6EEA6XM7DHRX6WASWSKDLBCEWDC",
+                     ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
+
+# Subindo bases depois de tratatadas -------------------------------------------
+
+setwd("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas")
+
+ativas_base <- vroom("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas/empresas_ativas.csv")
+
+ativas <- ativas_base %>% 
+  rename(razao_social = X2, natureza_juridica = X3, 
+         qualifica_responsavel = X4, capital_social = X5,
+         porte_empresa = X6, ente_federativo = X7) %>% 
+         left_join(natureza_juridica, by = c("natureza_juridica" = "cod_subclass_natureza_juridica")) %>% 
+         filter(cod_natureza_juridica > 1 & cod_natureza_juridica < 5)
+```
+
+## Tratamentos iniciais
+
+Os dados receberam um tratamento inicial, que consistiu nos seguintes procedimentos: 1) manutenção de empresas com status ativo; 2) retirada de empresas com natureza jurídica pública ou associada a organismos internacionais. 
+
+As informações a seguir representa a estrutura da base estabelecimentos, que é a parte central dos dados da Receita Federal Brasileira (RFB) 
+
+```{r base}
+
+glimpse(ativas)
+
+```
+
