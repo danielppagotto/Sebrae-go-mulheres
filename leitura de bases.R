@@ -107,6 +107,9 @@ socios <- rbind(socio1, socio2, socio3, socio4, socio5,
          nome_socio = X3, qualificacao_socio = X5, 
          entrada_sociedade = X6, pais = X7, faixa_etaria = X11)
 
+write.csv(socios, "socios.csv")
+
+
 # Tratamentos -------------------------------------------------------------
 
 
