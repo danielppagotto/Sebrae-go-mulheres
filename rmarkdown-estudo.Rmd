@@ -8,14 +8,16 @@ output: html_document
 ```{r preparacao, message=FALSE, warning=FALSE, include=FALSE}
 library(tidyverse); library(vroom); library(genderBR); library(readxl); library(lubridate)
 
-tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/cnae.csv?token=AB6EEA2QR7M5547S44OSIC3BCHRW2",
+tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/cnae.csv",
                        ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
-municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv?token=AB6EEAZ4IYU44UIEVNZ5XQDBCHR3O",
+municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv",
                          ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
-natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv?token=AB6EEA5OLW5IREMLWTSMQ4TBCHR76",
+
+natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv",
                                 ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
+
 
 
 # Subindo bases depois de tratatadas -------------------------------------------
@@ -35,7 +37,7 @@ ativas <- ativas_base %>%
 
 ## Tratamentos iniciais
 
-Os dados receberam um tratamento inicial, que consistiu nos seguintes procedimentos: 1) manutenção de empresas com status ativo; 2) retirada de empresas com natureza jurídica pública ou associada a organismos internacionais. 
+Os dados receberam um tratamento inicial, que consistiu nos seguintes procedimentos: 1) manutenção de empresas com status ativo; 2) retirada de empresas com natureza jurídica pública ou associada a organismos internacionais (tal procedimento foi diferente do que fizemos no relatório passado). 
 
 As informações a seguir representa a estrutura da base estabelecimentos, que é a parte central dos dados da Receita Federal Brasileira (RFB). Ao todo, registramos 684.096 de empresas ativas no estado de Goiás. 
 
@@ -83,5 +85,5 @@ municipios_me <- me %>%
 DT::datatable(municipios_me)
 ```
 
-
+## 2) Análise 
 
