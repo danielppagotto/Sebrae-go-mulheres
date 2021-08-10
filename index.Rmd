@@ -33,6 +33,9 @@ ativas <- ativas_base %>%
          left_join(natureza_juridica, by = c("natureza_juridica" = "cod_subclass_natureza_juridica")) %>% 
          filter(cod_natureza_juridica > 1 & cod_natureza_juridica < 5) %>% 
          rename(id = `...1`)
+
+setwd("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas")
+socios <- vroom("socios.csv")
 ```
 
 ## Tratamentos iniciais
@@ -58,7 +61,7 @@ microempresas <- ativas %>%
 dim(microempresas)
 ```
 
-Em sequência, aplicou-se a função get_gender para identificar nomes dos empresários. O algoritmo conseguiu prever 90% dos nomes. Com isso, o número de observações foi de 387.345.
+Em sequência, aplicou-se a função `get_gender` para identificar nomes dos empresários. O algoritmo conseguiu prever 90% dos nomes. Com isso, o número de observações foi de 387.345.
 
 ```{r}
 
@@ -96,6 +99,59 @@ nao_me1 <- ativas %>%
 dim(nao_me1)
 ```
 
+Nesse caso, as empresas possuem sócios. Juntando as bases de empresas e sócios ficamos com 536.738 observações. Isso indica que cada empresa tem em média 2,07 sócios. 
+
+Porém, fizemos um tratamento para manter apenas os sócios que estavam no momento da fundação da empresa e que permaneciam como sócio. Com isso, ficamos com 234.101 observações
+
+```{r}
+nao_me <- nao_me1 %>% 
+        left_join(socios, by = c("cnpj_basico"="cnpj_basico")) 
+
+nao_me_tratado <- nao_me %>% 
+            mutate(genero = get_gender(nome_socio), .after = nome_socio) %>% 
+            filter(data_inicio_atividade == entrada_sociedade) %>% # sócios da entrada
+            select(-`...1`) %>% 
+            mutate(data = parse_date_time(data_inicio_atividade, orders = "ymd"),
+            ano = year(data))
+
+dim(nao_me_tratado)
+```
+
+Em sequência, foi aplicada a função `get_gender` para fazer as previsões. O algoritmo conseguiu prever 91,6% dos sexos. Com isso, o número de observações foi de 214.601 observações. 
+
+Considerando o total inicial de 684.096, mantivemos 601.946 observações (87% das observações) 
+
+```{r}
+nao_me_tratado_s_na <- nao_me_tratado %>% 
+                      filter(genero != "NA")
+
+dim(nao_me_tratado_s_na)
+```
+
+Os resultados calculados para o total de empresas não ME por sexo e município estão na tabela abaixo. 
+
+```{r}
+municipios_nao_me <- nao_me_tratado_s_na %>% 
+                      left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
+                      rename(nome_municipio = Municipio) %>% 
+                      group_by(municipio,nome_municipio,genero) %>% 
+                      count() %>% 
+                      mutate(natureza = "não me")
+
+DT::datatable(municipios_nao_me)
+```
+
+## 3) Todas empresas 
+
+```{r}
+total <- rbind(municipios_me, municipios_nao_me)
+
+total <- total %>% 
+          group_by(nome_municipio, genero) %>% 
+          summarise(total = sum(n))
+
+DT::datatable(total)
+```
 
 
 
