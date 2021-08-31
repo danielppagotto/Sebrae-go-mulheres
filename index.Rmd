@@ -76,11 +76,11 @@ dim(me)
 
 ```
 
-Mais um procedimento foi realizado para retirar os empreendedores e empreendedoras vinculados a mais de uma empresa para evitar dupla contagem de empreendedores. Com isso, 1706 observações foram retiradas, restando 385639 observações.  
+Mais um procedimento foi realizado para retirar os empreendedores e empreendedoras vinculados a mais de uma empresa para evitar dupla contagem de empreendedores. Com isso, 1284 observações foram retiradas, restando 386061 observações.  
 
 ```{r}
 me2 <- me %>% 
-  distinct(razao_social, .keep_all = TRUE)
+  distinct(razao_social, municipio, .keep_all = TRUE)
 
 dim(me2)
 ```
@@ -137,8 +137,17 @@ nao_me_tratado_s_na <- nao_me_tratado %>%
 dim(nao_me_tratado_s_na)
 ```
 
-Foi realizado um procedimento semelhante ao anterio 
+Foi realizado um procedimento semelhante ao anterior para evitar dupla contagem.  
 
+```{r}
+
+nao_me_distinct <- nao_me_tratado_s_na %>% 
+  distinct(nome_socio, municipio, faixa_etaria, .keep_all = TRUE)
+
+dim(nao_me_distinct)
+```
+
+Com isso, houve uma redução de 31.085 observações. Isso se dá, pois para se ter uma ideia, apenas empreendedores detinham 13.575 registros. A empreendedora abaixo é um exemplo disso, possuindo 47 registros na base: vários CPNJ diferentes registrados em um mesmo município e  
 
 
 
