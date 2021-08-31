@@ -85,8 +85,6 @@ me2 <- me %>%
 dim(me2)
 ```
 
-
-
 Por fim, foi feito um agrupamento por microempresas por município 
 
 ```{r}
@@ -138,6 +136,12 @@ nao_me_tratado_s_na <- nao_me_tratado %>%
 
 dim(nao_me_tratado_s_na)
 ```
+
+Foi realizado um procedimento semelhante ao anterio 
+
+
+
+
 
 Os resultados calculados para o total de empresas não ME por sexo e município estão na tabela abaixo. 
 
