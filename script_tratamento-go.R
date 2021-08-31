@@ -14,6 +14,18 @@ natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagott
                                 ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
 
 
+pop_goias_2020 <- read_csv("~/GitHub/Sebrae-go-mulheres/bases de apoio/pop_goias_2020.csv") %>% 
+                        janitor::clean_names()
+
+pop_ea <- pop_goias_2020 %>% 
+  filter(idade != "De 0 até 4 anos" & 
+         idade != "De 5 até 9 anos" &
+         idade != "De 10 até 14 anos") %>% 
+  group_by(cod_mun, sexo) %>% 
+  summarise(total = sum(pop))
+
+socios <- vroom("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas/socios.csv")
+
 # Subindo bases depois de tratatadas -------------------------------------------
 
 setwd("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas")
@@ -40,7 +52,10 @@ me <- microempresas %>%
   mutate(data = parse_date_time(data_inicio_atividade, orders = "ymd"),
          ano = year(data)) 
 
-municipios_me <- me %>% 
+me2 <- me %>% 
+  distinct(razao_social, .keep_all = TRUE)
+
+municipios_me <- me2 %>% 
   rename(nome_municipio = Municipio) %>% 
   group_by(municipio, nome_municipio , genero) %>% 
   count() %>% 
@@ -55,24 +70,16 @@ total_anos <- me %>%
          prop_male = Male/total) 
 
 total_anos %>% 
-  filter(ano > 1965) %>% 
+  filter(ano > 1980) %>% 
   ggplot() +
   geom_line(aes(x = ano, y = prop_female, col = "darkred")) +
   geom_line(aes(x = ano, y = prop_male, col = "darkblue")) + 
   theme_minimal()
-  
-
-writexl::write_xlsx(total_anos, "total_anos.xlsx")
-
-total_anos %>% 
-  filter(ano > 2015) %>% 
-  ggplot(aes(x = data, y = n, col = genero)) + geom_line() +
-  theme_minimal() + 
-  facet_wrap(~genero)
-
 
 nome_diferentes <- me %>%  
       filter(is.na(genero)) 
+
+writexl::write_xlsx(total_anos, "total_anos.xlsx")
 
 # tratando não ME --------------------------------------------------------------
 

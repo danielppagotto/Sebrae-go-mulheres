@@ -76,6 +76,17 @@ dim(me)
 
 ```
 
+Mais um procedimento foi realizado para retirar os empreendedores e empreendedoras vinculados a mais de uma empresa para evitar dupla contagem de empreendedores. Com isso, 1706 observações foram retiradas, restando 385639 observações.  
+
+```{r}
+me2 <- me %>% 
+  distinct(razao_social, .keep_all = TRUE)
+
+dim(me2)
+```
+
+
+
 Por fim, foi feito um agrupamento por microempresas por município 
 
 ```{r}
