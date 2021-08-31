@@ -18,6 +18,15 @@ municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebra
 natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv",
                                 ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
 
+pop_goias_2020 <- read_csv("~/GitHub/Sebrae-go-mulheres/bases de apoio/pop_goias_2020.csv") %>% 
+                        janitor::clean_names()
+
+pop_ea <- pop_goias_2020 %>% 
+  filter(idade != "De 0 até 4 anos" & 
+         idade != "De 5 até 9 anos" &
+         idade != "De 10 até 14 anos") %>% 
+  group_by(cod_mun, sexo) %>% 
+  summarise(total = sum(pop))
 
 
 # Subindo bases depois de tratatadas -------------------------------------------
@@ -147,15 +156,22 @@ nao_me_distinct <- nao_me_tratado_s_na %>%
 dim(nao_me_distinct)
 ```
 
-Com isso, houve uma redução de 31.085 observações. Isso se dá, pois para se ter uma ideia, apenas empreendedores detinham 13.575 registros. A empreendedora abaixo é um exemplo disso, possuindo 47 registros na base: vários CPNJ diferentes registrados em um mesmo município e  
+Com isso, houve uma redução de 31.085 observações. Isso se dá, pois para se ter uma ideia, apenas empreendedores detinham 13.575 registros. A empreendedora abaixo é um exemplo disso, possuindo 47 registros na base: vários CPNJ diferentes registrados em um mesmo município. 
 
+```{r empreendedora, echo=FALSE, message=FALSE, warning=FALSE}
+suzana <- nao_me %>% 
+            filter(nome_socio == "SUZANA MARIA CAMILO DE LIMA BITTENCOURT") %>% 
+            select(nome_socio, faixa_etaria, cnpj_basico, razao_social)
 
+DT::datatable(suzana)
+  
+```
 
 
 Os resultados calculados para o total de empresas não ME por sexo e município estão na tabela abaixo. 
 
 ```{r}
-municipios_nao_me <- nao_me_tratado_s_na %>% 
+municipios_nao_me <- nao_me_distinct %>% 
                       left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
                       rename(nome_municipio = Municipio) %>% 
                       group_by(municipio,nome_municipio,genero) %>% 
@@ -167,14 +183,24 @@ DT::datatable(municipios_nao_me)
 
 ## 3) Todas empresas 
 
+Por fim, são calculados os totais de empreendedores por município, bem como o total a taxa de empreendedores por habitantes de ambos sexos 
+
 ```{r}
-total <- rbind(municipios_me, municipios_nao_me)
+total_por_tipo <- rbind(municipios_me, municipios_nao_me)
 
-total <- total %>% 
-          group_by(nome_municipio, genero) %>% 
-          summarise(total = sum(n))
+total_sem_tipo <- total_por_tipo %>% 
+          group_by(municipio, nome_municipio, genero) %>% 
+          summarise(total_empreendedores = sum(n)) %>% 
+          mutate(genero = case_when(genero == "Female" ~ "Feminino",
+                                    genero == "Male" ~ "Masculino"))
 
-DT::datatable(total)
+total_taxa <- total_sem_tipo %>% 
+  left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
+  left_join(pop_ea, by = c("cod_IBGE"="cod_mun",
+                          "genero" = "sexo")) %>% 
+  mutate(taxa = (total_empreendedores/total) * 100)
+
+DT::datatable(total_taxa)
 ```
 
 

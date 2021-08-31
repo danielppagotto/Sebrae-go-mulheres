@@ -7,7 +7,7 @@ tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-
                        ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
 municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv",
-                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
+                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
 
 
 natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv",
@@ -53,7 +53,7 @@ me <- microempresas %>%
          ano = year(data)) 
 
 me2 <- me %>% 
-  distinct(razao_social, .keep_all = TRUE)
+  distinct(razao_social, municipio, .keep_all = TRUE)
 
 municipios_me <- me2 %>% 
   rename(nome_municipio = Municipio) %>% 
@@ -92,7 +92,7 @@ nao_me <- nao_me1 %>%
 nao_me_tratado <- nao_me %>% 
             mutate(genero = get_gender(nome_socio), .after = nome_socio) %>% 
             filter(data_inicio_atividade == entrada_sociedade) %>% 
-            select(-`...1`) %>% 
+            select(-`...1.x`) %>% 
             mutate(data = parse_date_time(data_inicio_atividade, orders = "ymd"),
             ano = year(data))
 
@@ -100,19 +100,34 @@ nao_me_tratado <- nao_me %>%
 nao_me_tratado_s_na <- nao_me_tratado %>% 
                       filter(genero != "NA")
 
+ x <- nao_me_tratado_s_na %>% 
+         group_by(nome_socio) %>% 
+         count() %>% 
+         filter(n > 4)
 
-municipios_nao_me <- nao_me_tratado_s_na %>% 
+nao_me_distinct <- nao_me_tratado_s_na %>% 
+  distinct(nome_socio, municipio, faixa_etaria, .keep_all = TRUE)
+
+# suzana <- nao_me1 %>% 
+#   filter(nome_socio == "SUZANA MARIA CAMILO DE LIMA BITTENCOURT") %>% 
+#   select(nome_socio, faixa_etaria, cnpj_basico, razao_social)
+# 
+# DT::datatable(suzana)
+
+municipios_nao_me <- nao_me_distinct %>% 
                       left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
                       rename(nome_municipio = Municipio) %>% 
                       group_by(municipio,nome_municipio,genero) %>% 
                       count() %>% 
                       mutate(natureza = "não me")
 
-total <- rbind(municipios_me, municipios_nao_me)
+total_por_tipo <- rbind(municipios_me, municipios_nao_me)
 
-total <- total %>% 
-          group_by(nome_municipio, genero) %>% 
-          summarise(total = sum(n))
+total_sem_tipo <- total_por_tipo %>% 
+          group_by(municipio, nome_municipio, genero) %>% 
+          summarise(total_empreendedores = sum(n)) %>% 
+          mutate(genero = case_when(genero == "Female" ~ "Feminino",
+                                    genero == "Male" ~ "Masculino"))
 
 # total_por_sexo_spread <- nao_me_tratado_s_na %>% 
 #                       group_by(ano, cnpj_basico, genero) %>% 
@@ -137,3 +152,16 @@ total <- total %>%
 # 
 # 
 # write.csv(nao_me, "ativas_nao_me.csv")
+
+
+# Consolidando por população ativa ----------------------------------------
+
+total_taxa <- total_sem_tipo %>% 
+  left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
+  left_join(pop_ea, by = c("cod_IBGE"="cod_mun",
+                          "genero" = "sexo")) %>% 
+  mutate(taxa = (total_empreendedores/total) * 100)
+
+
+
+
