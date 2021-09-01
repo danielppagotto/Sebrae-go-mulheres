@@ -7,7 +7,7 @@ tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-
                        ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
 municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv",
-                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) 
+                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) %>% filter(UF == "GO")
 
 
 natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv",
