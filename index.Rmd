@@ -12,7 +12,7 @@ tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-
                        ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
 
 municipios <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/municipios_serpro.csv",
-                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
+                         ";", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252")) %>% filter(UF == "GO")
 
 
 natureza_juridica <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/natureza_juridica.csv",
@@ -198,11 +198,59 @@ total_taxa <- total_sem_tipo %>%
   left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
   left_join(pop_ea, by = c("cod_IBGE"="cod_mun",
                           "genero" = "sexo")) %>% 
-  mutate(taxa = (total_empreendedores/total) * 100)
+  mutate(taxa = round((total_empreendedores/total) * 100,2))
 
 DT::datatable(total_taxa)
 ```
 
+Também serão feitas análises feitas análises do percentual de mulheres em relação a homens 
+
+```{r}
+perc_municipio <- total_taxa %>% 
+  filter(UF == "GO") %>% 
+  select(nome_municipio, genero, total_empreendedores) %>% 
+  spread(key = genero, value = total_empreendedores) %>% 
+  mutate(perc_feminino = round(Feminino/(Feminino + Masculino),2),
+         perc_masculino = round(Masculino/(Feminino + Masculino),2))
+
+DT::datatable(perc_municipio)
+```
+
+Por fim, foram feitas análises sobre 
+
+```{r}
+div_cnae <- tab_cnae %>% 
+  group_by(cod_divisao,nm_divisao) %>% 
+  count() %>% 
+  select(-n)
+
+me2$cnae <- as.character(me2$cnae)
+
+cnae_me <- me2 %>% 
+  group_by(cnae, genero) %>% 
+  count() 
+
+nao_me_distinct$cnae <- as.character(nao_me_distinct$cnae)
+
+cnae_naome <- nao_me_distinct %>% 
+  group_by(cnae, genero) %>% 
+  count() 
+
+cnae_total <- rbind(cnae_me, cnae_naome)
+
+cnae_total2 <- cnae_total %>% 
+  mutate(classe_cnae = str_sub(cnae, end = 2)) %>%  
+  group_by(genero, classe_cnae) %>% 
+  summarise(total = sum(n)) %>% 
+  mutate(genero = case_when(genero == "Female" ~ "Feminino",
+                            genero == "Male" ~ "Masculino")) %>% 
+  spread(genero, total) %>% 
+  mutate(perc_masculino = round(Masculino/(Feminino + Masculino),2),
+         perc_feminino = round(Feminino/(Feminino + Masculino),2)) %>% 
+  left_join(div_cnae, by = c("classe_cnae"="cod_divisao"))  
+
+DT::datatable(cnae_total2)
+```
 
 
 

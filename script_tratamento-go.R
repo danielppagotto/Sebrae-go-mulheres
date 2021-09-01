@@ -163,5 +163,48 @@ total_taxa <- total_sem_tipo %>%
   mutate(taxa = (total_empreendedores/total) * 100)
 
 
+perc_municipio <- total_taxa %>% 
+  filter(UF == "GO") %>% 
+  select(nome_municipio, genero, total_empreendedores) %>% 
+  spread(key = genero, value = total_empreendedores) %>% 
+  mutate(perc_feminino = Feminino/(Feminino + Masculino),
+         perc_masculino = Masculino/(Feminino + Masculino))
 
 
+writexl::write_xlsx(perc_municipio, "percentual_por_municipio.xlsx")
+writexl::write_xlsx(total_taxa, "taxa_por_municipio.xlsx")
+
+# Analisando CNAE ---------------------------------------------------------
+
+div_cnae <- tab_cnae %>% 
+  group_by(cod_divisao,nm_divisao) %>% 
+  count() %>% 
+  select(-n)
+
+me2$cnae <- as.character(me2$cnae)
+
+cnae_me <- me2 %>% 
+  group_by(cnae, genero) %>% 
+  count() 
+
+nao_me_distinct$cnae <- as.character(nao_me_distinct$cnae)
+
+cnae_naome <- nao_me_distinct %>% 
+  group_by(cnae, genero) %>% 
+  count() 
+
+cnae_total <- rbind(cnae_me, cnae_naome)
+
+cnae_total2 <- cnae_total %>% 
+  mutate(classe_cnae = str_sub(cnae, end = 2)) %>%  
+  group_by(genero, classe_cnae) %>% 
+  summarise(total = sum(n)) %>% 
+  mutate(genero = case_when(genero == "Female" ~ "Feminino",
+                            genero == "Male" ~ "Masculino")) %>% 
+  spread(genero, total) %>% 
+  mutate(perc_masculino = Masculino/(Feminino + Masculino),
+         perc_feminino = Feminino/(Feminino + Masculino)) %>% 
+  left_join(div_cnae, by = c("classe_cnae"="cod_divisao"))  
+
+
+writexl::write_xlsx(cnae_total2, "cnae_total.xlsx")
