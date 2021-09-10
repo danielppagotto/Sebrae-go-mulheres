@@ -61,20 +61,6 @@ municipios_me <- me2 %>%
   count() %>% 
   mutate(natureza = "me")
 
-total_anos <- me %>% 
-  group_by(ano, genero) %>% 
-  count() %>% 
-  spread(genero,n) %>% 
-  mutate(total = Female + Male,
-         prop_female = Female/total,
-         prop_male = Male/total) 
-
-total_anos %>% 
-  filter(ano > 1980) %>% 
-  ggplot() +
-  geom_line(aes(x = ano, y = prop_female, col = "darkred")) +
-  geom_line(aes(x = ano, y = prop_male, col = "darkblue")) + 
-  theme_minimal()
 
 nome_diferentes <- me %>%  
       filter(is.na(genero)) 
@@ -208,3 +194,36 @@ cnae_total2 <- cnae_total %>%
 
 
 writexl::write_xlsx(cnae_total2, "cnae_total.xlsx")
+
+
+
+# contabilizando total por ano --------------------------------------------
+
+me3 <- me2 %>% select(ano, genero, natureza_juridica)
+nao_me2 <- nao_me_distinct %>% select(ano, genero, natureza_juridica)
+
+total <- rbind(me3, nao_me2)
+
+total_anos <- total %>% 
+  group_by(ano, genero) %>% 
+  count() %>% 
+  spread(genero,n) %>% 
+  mutate(total = Female + Male,
+         prop_female = Female/total,
+         prop_male = Male/total) 
+
+total_anos %>% 
+  filter(ano > 1980) %>% 
+  ggplot() +
+  geom_line(aes(x = ano, y = prop_female, col = "darkred")) +
+  geom_line(aes(x = ano, y = prop_male, col = "darkblue")) + 
+  theme_minimal()
+
+writexl::write_xlsx(total_anos, "evolucao_generos.xlsx")
+
+
+total_natjur <- total %>% 
+  group_by(genero, natureza_juridica) %>% 
+  count() 
+
+writexl::write_xlsx(total_natjur, "totalnatureza.xlsx")
