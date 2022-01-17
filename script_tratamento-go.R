@@ -1,7 +1,7 @@
 library(tidyverse); library(vroom); library(genderBR); library(readxl); library(lubridate)
 library(dygraphs)
 
-setwd("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/estabelecimentos")
+setwd("~/LAPEI/Projeto SEBRAE/Atualizacao pesquisas/empreendedorismo RFB/estabelecimentos")
 
 tab_cnae <- read_delim("https://raw.githubusercontent.com/danielppagotto/Sebrae-go-mulheres/main/bases%20de%20apoio/cnae.csv",
                        ",", escape_double = FALSE, trim_ws = TRUE, locale = locale(encoding = "windows-1252"))
@@ -24,13 +24,13 @@ pop_ea <- pop_goias_2020 %>%
   group_by(cod_mun, sexo) %>% 
   summarise(total = sum(pop))
 
-socios <- vroom("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas/socios.csv")
+socios <- vroom("~/LAPEI/Projeto SEBRAE/Atualizacao pesquisas/empreendedorismo RFB/empresas/socios.csv")
 
 # Subindo bases depois de tratatadas -------------------------------------------
 
-setwd("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas")
+setwd("~/LAPEI/Projeto SEBRAE/Atualizacao pesquisas/empreendedorismo RFB/empresas")
 
-ativas_base <- vroom("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/empresas/empresas_ativas.csv")
+ativas_base <- vroom("~/LAPEI/Projeto SEBRAE/Atualizacao pesquisas/empreendedorismo RFB/empresas/empresas_ativas.csv")
 
 ativas <- ativas_base %>% 
   rename(razao_social = X2, natureza_juridica = X3, 
@@ -142,11 +142,18 @@ total_sem_tipo <- total_por_tipo %>%
 
 # Consolidando por população ativa ----------------------------------------
 
+pop_ea_spread <- pop_ea %>%  
+                    spread(sexo, total)
+
+
 total_taxa <- total_sem_tipo %>% 
+  spread(genero, total_empreendedores) %>% 
+  rename(emp_fem = Feminino, emp_masc = Masculino) %>% 
   left_join(municipios, by = c("municipio"="Codigo_TOM_SERPRO")) %>% 
-  left_join(pop_ea, by = c("cod_IBGE"="cod_mun",
-                          "genero" = "sexo")) %>% 
-  mutate(taxa = (total_empreendedores/total) * 100)
+  left_join(pop_ea_spread, by = c("cod_IBGE"="cod_mun")) %>% 
+  select(-Municipio, -cod_IBGE, -UF) %>%  
+  mutate(taxa_percentual_fem = emp_fem/Feminino, 
+         taxa_percentual_masc = emp_masc/Masculino)
 
 
 perc_municipio <- total_taxa %>% 
@@ -156,6 +163,8 @@ perc_municipio <- total_taxa %>%
   mutate(perc_feminino = Feminino/(Feminino + Masculino),
          perc_masculino = Masculino/(Feminino + Masculino))
 
+
+sum(perc_municipio$Feminino)
 
 writexl::write_xlsx(perc_municipio, "percentual_por_municipio.xlsx")
 writexl::write_xlsx(total_taxa, "taxa_por_municipio.xlsx")

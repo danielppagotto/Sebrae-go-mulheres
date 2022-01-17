@@ -1,58 +1,63 @@
 library(tidyverse); library(vroom)
 
-setwd("~/LAPEI/Projeto SEBRAE/Atualização pesquisas/empreendedorismo RFB/estabelecimentos")
+setwd("~/LAPEI/Projeto SEBRAE/Atualizacao pesquisas/empreendedorismo RFB/estabelecimentos")
+
+tab_cnae <- read_delim("bd_cnpj_tratados/tab_cnae.csv", 
+                       "#", escape_double = FALSE, trim_ws = TRUE) %>% 
+            select(cod_cnae, nm_cnae)
+
 # Arquivo que contem as leituras inicias da base
 
 estab0 <- vroom("estab0.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab1 <- vroom("estab1.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab2 <- vroom("estab2.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab3 <- vroom("estab3.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab4 <- vroom("estab4.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab5 <- vroom("estab5.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab6 <- vroom("estab6.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 
 estab7 <- vroom("estab7.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab8 <- vroom("estab8.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estab9 <- vroom("estab9.ESTABELE", col_names = FALSE) %>% 
   select(X1, X2, X3, X4, X5, 
          X6, X7, X11, X12, X20, X21) %>% 
-  filter(X20 == "RS" & X6 == "02")
+  filter(X6 == "02")
 
 estabelecimentos <- rbind(estab0, estab1, estab2, 
                           estab3, estab4, estab5, 
@@ -63,6 +68,64 @@ estabelecimentos <- rbind(estab0, estab1, estab2,
          situacao = X6, data_situacao_atual = X7, 
          data_inicio_atividade = X11, cnae = X12, uf = X20, 
          municipio = X21)
+
+
+estabelecimentos_t <- estabelecimentos %>%  
+  mutate(cod_cnae = str_sub(cnae, end = 5)) %>% 
+  filter(cod_cnae == "94910" | cod_cnae == "91015" |
+         cod_cnae == "47610" | cod_cnae == "91031" |
+         cod_cnae == "92003" | cod_cnae == "93298" | 
+         cod_cnae == "47890" | cod_cnae == "47296" |
+         cod_cnae == "47237" | cod_cnae == "47113" |
+         cnae == "5611204" | cnae == "5611205"| 
+         cnae == "8011101" | cnae == "8020001") 
+
+
+estabelecimentos_spread <- estabelecimentos_t %>%
+  mutate(ano_fundacao = str_sub(data_inicio_atividade, end = 4)) %>% 
+  filter(ano_fundacao < 2019) %>% 
+  group_by(cnae, cod_cnae, uf, municipio) %>% 
+  count() %>% 
+  left_join(tab_cnae, by = c("cnae"="cod_cnae")) %>% 
+  ungroup() %>% 
+  select(-cnae, -cod_cnae) %>% 
+  spread(nm_cnae, n)  
+
+  
+estabelecimentos_spread[is.na(estabelecimentos_spread)] <- 0
+
+
+
+
+writexl::write_xlsx(estabelecimentos_spread, "estabelecimentos_municipios.xlsx")
+
+
+# 94910  religiao 
+# 91015  biblioteca e arquivo 
+# 47610  Comercio varejista de livro 
+# 91031  Atividades de jardins botânicos zoológicos parques nacionais reservas ecológicas e áreas de proteção ambiental
+# 92003  jogos de azar 
+# 93298  Discotecas danceterias salões de dança e similares
+# 47890  Comercio de armas e municoes 
+# 47296  Tabacaria 
+# 47237  Comercio varejista de bebida (distribuidora)
+# 47113  mercado (super, hiper)
+# 47121 - mercearia 
+# 5611204 bares
+# 5611205 bares
+# 8011101 servico de seguranca privada 
+# 8020001 monitoramento de seguranca
+
+cnae <- qsacnpj::tab_cnae
+
+
+
+ 
+
+
+  
+
+
 
 
 # Sócios ------------------------------------------------------------------
