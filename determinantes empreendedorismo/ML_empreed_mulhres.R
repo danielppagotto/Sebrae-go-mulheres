@@ -22,6 +22,7 @@ base_mulheres <- readxl::read_excel("base_mulheres.xlsx",
                                                   "numeric", "numeric", "numeric", 
                                                   "numeric", "text")) %>% janitor::clean_names()
 
+
 munic_2018 <- read_delim("munic_2018.csv", 
                          ";", escape_double = FALSE, col_types = cols(cod_ibge = col_character()), 
                          locale = locale(encoding = "ISO-8859-1", 
@@ -43,7 +44,10 @@ base_mulheres <- base_mulheres %>%
          pib_per_capta, empregos_formais,infra_agua, infra_esgoto, infra_internet, infra_energia,
          infra_esgoto, st_agro, st_ind, st_serv, trafico, contrav_penais, eq_orc_mun, 
          rec_proprios, ideb_quinto_ano, ideb_nono_ano, crimes_sex, 
-         escolarid_trab, remun_mediana, sebrae,  msau39, starts_with("mppm")) 
+         escolarid_trab, remun_mediana, sebrae,  msau39, starts_with("mppm"),
+         idm_geral, idm_educ, idm_eco, evol_pib, pib_per_capta, infra_escolas) 
+
+writexl::write_xlsx(base_mulheres, "base_mulheres.xlsx")
 
 base_mulheres %>% 
   group_by(mesorregiao) %>% 
@@ -56,6 +60,7 @@ base_mulheres %>%
 
 
 # split -------------------------------------------------------------------
+set.seed(123)
 
 splits <- initial_split(base_mulheres, prop = 0.7, strata = mesorregiao)
 
@@ -66,7 +71,7 @@ validacao_cruzada <- vfold_cv(split_treino, v = 10, strata = mesorregiao)
 
 # recipes -----------------------------------------------------------------
 
-recipe_model <- recipe(log_emp_mulher ~ ., data = split_treino) %>%
+recipe_model <- recipe(log_emp_mulher ~ ., data = base_mulheres) %>%
                 step_dummy(all_nominal_predictors()) %>% 
                 step_corr(all_numeric(), -all_outcomes(), threshold = 0.80) %>% 
                 step_scale(all_numeric(), -all_outcomes()) 
@@ -110,7 +115,7 @@ conjunto <- workflow_set(
   models = list(linear_model, dt_model, boost_model, rf_model)
 )
 
-# tutorial treinando vários modelos ---------------------------------------------------------------
+# tutorial treinando v?rios modelos ---------------------------------------------------------------
 
 grid_ctrl <- control_grid(
   save_pred = TRUE, 
@@ -118,7 +123,7 @@ grid_ctrl <- control_grid(
   save_workflow = TRUE
 )
 
-
+set.seed(123)
 grid_results <- conjunto %>% 
   workflow_map(
     resamples = validacao_cruzada, 
@@ -236,12 +241,21 @@ shap.plot.dependence(shap_empreend,
                      color_feature = "infra_esgoto")
 
 
+# random forest 
+
+
+fit_rf <- rand_forest(
+  mtry = 6, min_n = 19, trees = 1000) %>% 
+  set_engine("ranger", importance = "permutation") %>% 
+  set_mode("regression") %>% 
+  fit(log_emp_mulher ~ ., data = base_pos_recipe)
+
 # explainer 
 
 explainer <- DALEX::explain(
-  model = final_model, 
-  data = base_mulheres, 
-  y = base_mulheres$log_emp_mulher,
+  model = fit_rf, 
+  data = base_pos_recipe, 
+  y = base_pos_recipe$log_emp_mulher,
   label = "Random Forest"
 )
 
