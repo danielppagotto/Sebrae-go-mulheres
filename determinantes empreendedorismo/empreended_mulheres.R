@@ -13,14 +13,24 @@ setwd("~/GitHub/Sebrae-go-mulheres/determinantes empreendedorismo")
 
 # lendo a base e ja transformando valores 
 
-base_mulheres <- readxl::read_excel("base_mulheres.xlsx", 
-                            col_types = c("text", "numeric", "text", "numeric", "numeric", "numeric","numeric", "numeric", 
-                                          "numeric","numeric", "numeric", "numeric","numeric", "numeric", "numeric","numeric", "numeric", "numeric", 
-                                          "numeric", "numeric", "numeric",  "numeric", "numeric", "numeric","numeric", "numeric", "numeric","numeric", "numeric", "numeric", 
-                                          "numeric", "numeric", "numeric","numeric", "numeric", "numeric","numeric", "numeric", "numeric", "numeric", "numeric", 
-                                          "numeric", "numeric"))
+base_mulheres1 <- readxl::read_excel("base_mulheres.xlsx", 
+                                          col_types = c("text", "numeric", "text", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric", "numeric", "numeric", 
+                                                        "numeric")) %>% janitor::clean_names()
 
-base_mulheres <- base_mulheres %>% 
+base_mulheres <- base_mulheres1 %>% 
   janitor::clean_names()
 
 base_mulheres[is.na(base_mulheres)] <- 0
@@ -33,16 +43,16 @@ base_mulheres <- base_mulheres %>%
 base_mulheres <- base_mulheres %>% 
   filter(log_pibpcapta != -Inf & log_empregos != -Inf)
 
-base_mulheres <- base_mulheres %>% 
-  select(localidade,tx_emp_mulher,log_emp_mulher,
-         crimes_patrim,crimes_contra_pessoa,escolarid_trab,
-         pib_per_capta, log_pibpcapta, empregos_formais, 
-         log_empregos,infra_agua,infra_internet)
+base_mulheres_select <- base_mulheres %>% 
+  dplyr::select(localidade, tx_emp_mulher, log_emp_mulher, crimes_patrim,
+         crimes_contra_pessoa, escolarid_trab, pib_per_capta, 
+         log_pibpcapta, empregos_formais, log_empregos, infra_agua,
+         infra_internet, infra_esgoto)
 
-base_mulheres <- base_mulheres %>% 
-  filter(crimes_patrim != 0 & crimes_contra_pessoa != 0 &
-           escolarid_trab != 0 & infra_agua != 0 &
-           infra_internet != 0)
+# base_mulheres <- base_mulheres %>% 
+#   filter(crimes_patrim != 0 & crimes_contra_pessoa != 0 &
+#            escolarid_trab != 0 & infra_agua != 0 &
+#            infra_internet != 0)
 
 ## Gerar estatistica descritiva 
 
@@ -75,7 +85,8 @@ limiar_m <- mean(out_m) + (2 * sd(out_m))
 base_m_sem_outliers <- base_mulheres %>% 
          select(localidade,tx_emp_mulher,log_emp_mulher,
                 crimes_patrim,crimes_contra_pessoa,escolarid_trab,
-                log_pibpcapta,log_empregos,infra_agua, infra_internet) %>% 
+                log_pibpcapta,log_empregos,infra_agua, infra_internet,
+                infra_esgoto) %>% 
          cbind(out_m) %>% 
          filter(out_m < limiar_m) 
 
@@ -83,7 +94,7 @@ base_m_sem_outliers <- base_mulheres %>%
 
 modelo_mulher <- lm(formula = log_emp_mulher ~  crimes_contra_pessoa + crimes_patrim +
                 escolarid_trab + log_empregos + log_pibpcapta +
-                infra_agua + infra_internet , data = base_m_sem_outliers)
+                infra_agua + infra_internet + infra_esgoto, data = base_mulheres_select)
 
 summary(modelo_mulher)
 
